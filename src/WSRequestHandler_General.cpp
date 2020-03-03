@@ -145,14 +145,15 @@ void WSRequestHandler::HandleSetAudio(WSRequestHandler* req)
  * @category streaming
  */
 void WSRequestHandler::HandleSendCaptions(WSRequestHandler* req) {
-	if (!req->hasField("text")) {
+	if (!req->hasField("text") || !req->hasField("displayDuration")) {
 		return req->SendErrorResponse("missing request parameters");
 	}
 
 	OBSOutputAutoRelease output = obs_frontend_get_streaming_output();
 	if (output) {
 		const char* caption = obs_data_get_string(req->data, "text");
-		obs_output_output_caption_text1(output, caption);
+		double display_duration = obs_data_get_double(req->data, "displayDuration");
+		obs_output_output_caption_text2(output, caption, display_duration);
 	}
 
 	return req->SendOKResponse();

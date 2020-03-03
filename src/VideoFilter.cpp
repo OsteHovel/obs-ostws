@@ -208,9 +208,8 @@ void ostws_filter_raw_video(void* data, video_data* frame)
 				obs_data_set_string(obs_data, "group", group->name);
 				OBSDataArrayAutoRelease array = obs_data_array_create();
 
-				uint32_t bufferSize = rectangle->height * rectangle->width * 4;
-				char buffer [bufferSize+1];
-				buffer[bufferSize] = 0;
+				const uint32_t bufferSize = rectangle->height * rectangle->width * 4;
+				char* buffer = new char[bufferSize+1];
 				uint32_t bufferI = 0;
 
 				for (size_t y = rectangle->y; y < rectangle->y + rectangle->height; y++)
@@ -226,13 +225,14 @@ void ostws_filter_raw_video(void* data, video_data* frame)
 						{
 							break;
 						}
-						
+
 						sprintf(&buffer[bufferI], "%04X", *(frameLongData + y_pos + x));
 						bufferI = bufferI + 4;
 					}
 				}
 
 				obs_data_set_string(obs_data, "pixels", buffer);
+				obs_data_set_int(obs_data, "bufferSize", bufferSize);
 				obs_data_set_int(obs_data, "timestamp", frame->timestamp);
 				WSServer::Instance->broadcast_thread_safe({
 					obs_data_get_json(obs_data),
