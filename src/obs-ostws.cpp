@@ -43,13 +43,14 @@ extern struct obs_source_info create_alpha_filter_info();
 struct obs_source_info alpha_filter_info;
 
 OBS_DECLARE_MODULE()
+OBS_MODULE_AUTHOR("OsteHovel")
 OBS_MODULE_USE_DEFAULT_LOCALE("obs-ostws", "en-US")
 
 
 bool obs_module_load(void) {
-	blog(LOG_INFO, "OstWS Loading");
+	blog(LOG_INFO, "Initializing");
     blog(LOG_INFO, "WebSocket version %s", OST_WEBSOCKET_VERSION);
-    blog(LOG_INFO, "QT  version (compile-time): %s ; qt version (run-time): %s",
+    blog(LOG_INFO, "Qt version (compile-time): %s ; Qt version (run-time): %s",
         QT_VERSION_STR, qVersion());
 
     // Core setup
@@ -68,13 +69,12 @@ bool obs_module_load(void) {
 	ostws_audiofilter_info = create_ostws_audiofilter_info();
 	obs_register_source(&ostws_audiofilter_info);
 
-    // Loading finished
-    blog(LOG_INFO, "OstWS loaded!");
-
+    
+    blog(LOG_INFO, "Initialized");
     return true;
 }
 
 void obs_module_unload() {
-    blog(LOG_INFO, "OstWS unload");
+    blog(LOG_INFO, "Unloaded");
 }
 

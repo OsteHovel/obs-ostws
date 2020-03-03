@@ -208,6 +208,11 @@ void ostws_filter_raw_video(void* data, video_data* frame)
 				obs_data_set_string(obs_data, "group", group->name);
 				OBSDataArrayAutoRelease array = obs_data_array_create();
 
+				uint32_t bufferSize = rectangle->height * rectangle->width * 4;
+				char buffer [bufferSize+1];
+				buffer[bufferSize] = 0;
+				uint32_t bufferI = 0;
+
 				for (size_t y = rectangle->y; y < rectangle->y + rectangle->height; y++)
 				{
 					if (y >= s->known_height)
@@ -221,26 +226,18 @@ void ostws_filter_raw_video(void* data, video_data* frame)
 						{
 							break;
 						}
-
-						OBSDataAutoRelease pixelData = obs_data_create();
-						obs_data_set_int(pixelData, "x", x);
-						obs_data_set_int(pixelData, "y", y);
-						obs_data_set_int(pixelData, "color", *(frameLongData + y_pos + x));
-						obs_data_array_push_back(array, pixelData);
+						
+						sprintf(&buffer[bufferI], "%04X", *(frameLongData + y_pos + x));
+						bufferI = bufferI + 4;
 					}
 				}
 
-				obs_data_set_array(obs_data, "pixels", array);
+				obs_data_set_string(obs_data, "pixels", buffer);
 				obs_data_set_int(obs_data, "timestamp", frame->timestamp);
-				obs_data_set_int(obs_data, "maxB", rectangle->maxB);
-				obs_data_set_int(obs_data, "minB", rectangle->minB);
-				obs_data_set_int(obs_data, "maxG", rectangle->maxG);
-				obs_data_set_int(obs_data, "minG", rectangle->minG);
-				obs_data_set_int(obs_data, "maxR", rectangle->maxR);
-				obs_data_set_int(obs_data, "minR", rectangle->minR);
-				obs_data_set_int(obs_data, "maxA", rectangle->maxA);
-				obs_data_set_int(obs_data, "minA", rectangle->minA);
-				WSServer::Instance->broadcast_thread_safe(obs_data_get_json(obs_data));
+				WSServer::Instance->broadcast_thread_safe({
+					obs_data_get_json(obs_data),
+					video
+				});
 			}
 		}
 	}
@@ -451,14 +448,6 @@ void ostws_filter_destroy(void* data)
 	obs_remove_main_render_callback(ostws_filter_offscreen_render, s);
 	video_output_close(s->video_output);
 
-	// pthread_mutex_lock(&s->ostws_sender_video_mutex);
-	// pthread_mutex_lock(&s->ostws_sender_audio_mutex);
-
-	// ndiLib->NDIlib_send_destroy(s->ostws_sender);
-
-	// pthread_mutex_unlock(&s->ostws_sender_audio_mutex);
-	// pthread_mutex_unlock(&s->ostws_sender_video_mutex);
-
 	gs_stagesurface_unmap(s->stagesurface);
 	gs_stagesurface_destroy(s->stagesurface);
 	gs_texrender_destroy(s->texrender);
@@ -496,9 +485,6 @@ struct obs_source_info create_ostws_filter_info()
 
 	ostws_filter_info.video_tick = ostws_filter_tick;
 	ostws_filter_info.video_render = ostws_filter_videorender;
-
-	// Audio is available only with async sources
-	//ostws_filter_info.filter_audio = ostws_filter_asyncaudio;
 
 	return ostws_filter_info;
 }

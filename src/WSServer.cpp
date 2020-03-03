@@ -207,14 +207,6 @@ void WSServer::onNewConnection()
 
 		blog(LOG_INFO, "new client connection from %s:%d",
 			clientIp.toUtf8().constData(), pSocket->peerPort());
-
-		// obs_frontend_push_ui_translation(obs_module_get_string);
-		// QString title = tr("OBSWebsocket.NotifyConnect.Title");
-		// QString msg = tr("OBSWebsocket.NotifyConnect.Message")
-		// 	.arg(Utils::FormatIPAddress(clientAddr));
-		// obs_frontend_pop_ui_translation();
-		//
-		// Utils::SysTrayNotify(msg, QSystemTrayIcon::Information, title);
 	}
 }
 
