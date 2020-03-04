@@ -148,13 +148,15 @@ void WSRequestHandler::HandleSendCaptions(WSRequestHandler* req) {
 	if (!req->hasField("text") || !req->hasField("displayDuration")) {
 		return req->SendErrorResponse("missing request parameters");
 	}
-
+#if BUILD_CAPTIONS
 	OBSOutputAutoRelease output = obs_frontend_get_streaming_output();
 	if (output) {
 		const char* caption = obs_data_get_string(req->data, "text");
 		double display_duration = obs_data_get_double(req->data, "displayDuration");
 		obs_output_output_caption_text2(output, caption, display_duration);
 	}
-
 	return req->SendOKResponse();
+#else
+	return req->SendErrorResponse("Not supported by current build");
+#endif
 }

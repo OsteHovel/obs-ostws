@@ -15,6 +15,7 @@ endif()
 
 if (WIN32 OR APPLE)
 include(external/FindLibObs.cmake)
+mark_as_advanced(CLEAR LIBOBS_INCLUDE_DIR LIBOBS_LIB)
 endif()
 
 find_package(LibObs REQUIRED)
@@ -110,7 +111,7 @@ if(WIN32)
 
 	# --- Release package helper ---
 	# The "release" folder has a structure similar OBS' one on Windows
-	set(RELEASE_DIR "${PROJECT_SOURCE_DIR}/.././obs-studio/build/rundir/Release")
+	set(RELEASE_DIR "${LIBOBS_INCLUDE_DIR}/../${OBS_BUILDDIR_ARCH}/rundir/$<CONFIG>" CACHE FILEPATH "Relase folder")
 
 	add_custom_command(TARGET obs-ostws POST_BUILD
 		# If config is Release, package release files
@@ -172,6 +173,11 @@ if(WIN32)
 				"${LIBOBS_INCLUDE_DIR}/../${OBS_BUILDDIR_ARCH}/rundir/$<CONFIG>/data/obs-plugins/obs-ostws")
 	)
 	# --- End of sub-section ---
+	set(OBS_EXECUTABLE "${RELEASE_DIR}/bin/${ARCH_NAME}/obs64.exe" CACHE FILEPATH "Executable for OBS")
+	#add_executable(obs-executable IMPORTED GLOBAL)
+	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
+	set_target_properties(obs-ostws PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${$ELEASE_DIR}/bin/${ARCH_NAME}"
+                                                   VS_DEBUGGER_COMMAND           "${OBS_EXECUTABLE}")
 
 endif()
 # --- End of section ---

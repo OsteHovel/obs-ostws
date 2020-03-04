@@ -51,6 +51,7 @@ struct video_rectangle
 	uint32_t minA = 0;
 	bool invert = false;
 	bool output = false;
+	bool outputOnMatch = false;
 	uint64_t outputRate;
 	mutable uint64_t nextVideoUpdate;
 	mutable bool state = false;
@@ -198,9 +199,11 @@ void ostws_filter_raw_video(void* data, video_data* frame)
 		for (int rectangleIndex = 0; rectangleIndex < group->rectangles->count(); rectangleIndex++)
 		{
 			const video_rectangle* rectangle = &group->rectangles->at(rectangleIndex);
-			if (rectangle->output && rectangle->nextVideoUpdate < frame->timestamp)
+			if ((rectangle->output || rectangle->outputOnMatch &&
+					(group->individual && rectangle->state || group->state))
+				&& rectangle->nextVideoUpdate < frame->timestamp)
 			{
-				rectangle->nextVideoUpdate = frame->timestamp + (rectangle->outputRate * 1000000);
+				rectangle->nextVideoUpdate = frame->timestamp + rectangle->outputRate * 1000000;
 
 				OBSDataAutoRelease obs_data = obs_data_create();
 				obs_data_set_string(obs_data, "update-type", "VideoUpdate");
@@ -208,31 +211,27 @@ void ostws_filter_raw_video(void* data, video_data* frame)
 				obs_data_set_string(obs_data, "group", group->name);
 				OBSDataArrayAutoRelease array = obs_data_array_create();
 
-				const uint32_t bufferSize = rectangle->height * rectangle->width * 4;
-				char* buffer = new char[bufferSize+1];
-				uint32_t bufferI = 0;
+				const uint32_t buffer_size = rectangle->height * rectangle->width * 8;
+				char* buffer = new char[buffer_size + 1];
+				uint32_t buffer_i = 0;
 
 				for (size_t y = rectangle->y; y < rectangle->y + rectangle->height; y++)
 				{
 					if (y >= s->known_height)
-					{
 						break;
-					}
+
 					const size_t y_pos = y * linesizeForLong;
 					for (size_t x = rectangle->x; x < rectangle->x + rectangle->width; x++)
 					{
 						if (x >= s->known_width)
-						{
 							break;
-						}
 
-						sprintf(&buffer[bufferI], "%04X", *(frameLongData + y_pos + x));
-						bufferI = bufferI + 4;
+						sprintf(&buffer[buffer_i], "%08X", (*(frameLongData + y_pos + x)));
+						buffer_i = buffer_i + 8;
 					}
 				}
 
 				obs_data_set_string(obs_data, "pixels", buffer);
-				obs_data_set_int(obs_data, "bufferSize", bufferSize);
 				obs_data_set_int(obs_data, "timestamp", frame->timestamp);
 				WSServer::Instance->broadcast_thread_safe({
 					obs_data_get_json(obs_data),
@@ -372,6 +371,7 @@ void ostws_filter_update(void* data, obs_data_t* settings)
 			video_rectangle1.tolerance = obs_data_get_int(rectangle, "tolerance");
 			video_rectangle1.invert = obs_data_get_bool(rectangle, "invert");
 			video_rectangle1.output = obs_data_get_bool(rectangle, "output");
+			video_rectangle1.outputOnMatch = obs_data_get_bool(rectangle, "outputOnMatch");
 			video_rectangle1.outputRate = obs_data_get_int(rectangle, "outputRate");
 
 			video_rectangle1.maxB = min((video_rectangle1.color & 0xFF) + video_rectangle1.tolerance, 255);
